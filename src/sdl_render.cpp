@@ -19,12 +19,9 @@ void draw_sprite(SDL_RenderSprite& sprite, SDL_Renderer*render_target) {
 void draw_sprites_sdl(entt::registry &registry)
 {
 	auto spriteview = registry.view<SDL_RenderSprite>();
-
-	for (auto et : spriteview)
-	{
-		SDL_RenderSprite &sprite = spriteview.get(et);
+	spriteview.each([](SDL_RenderSprite &sprite) {
 		draw_sprite(sprite, gRenderer);
-	}
+	});
 }
 
 

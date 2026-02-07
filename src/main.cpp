@@ -6,30 +6,13 @@
 #include "vmath.h"
 #include "bitfont.h"
 
-//holds the observers for the reactive systems of this program
-struct RegistryObservers {
-	entt::observer sprite_transform_observer;
-
-	void initialize(entt::registry& registry) {
-
-		auto sprite_collector = entt::collector.replace<SpriteLocation>().when<SDL_RenderSprite>().group<SpriteLocation,SDL_RenderSprite>();
-		sprite_transform_observer.connect( registry, sprite_collector );
-
-		printf( "initializing observers");
-	}
-};
-
 int score = 0;
 void transform_sprites(entt::registry &registry)
 {		
-	int nexecutions = 0;
-	registry.ctx<RegistryObservers>().sprite_transform_observer.each([&registry,&nexecutions](auto et) {
-
-		SDL_RenderSprite& sprite = registry.get<SDL_RenderSprite>(et);
-		SpriteLocation& location = registry.get<SpriteLocation>(et);
+	auto view = registry.view<SDL_RenderSprite, SpriteLocation>();
+	view.each([](SDL_RenderSprite &sprite, SpriteLocation &location) {
 		Vec2i screenspace = game_space_to_screen_space(location.location);
-		sprite.location = screenspace; 	
-		nexecutions++;
+		sprite.location = screenspace;
 	});
 	//printf("transform executions %i, \n",nexecutions);
 }
@@ -237,7 +220,7 @@ void process_ball_collisions(entt::registry &registry) {
 	}
 }
 
-uint32_t build_brick(entt::registry &registry, Vec2f location, int type) {
+entt::entity build_brick(entt::registry &registry, Vec2f location, int type) {
 	std::string sprite;
 	int score = 1;
 	switch (type)
@@ -269,10 +252,10 @@ uint32_t build_brick(entt::registry &registry, Vec2f location, int type) {
 
 	//ball
 	auto brick = registry.create();
-	registry.assign<SDL_RenderSprite>(brick);
-	registry.assign<Brick>(brick);
+	registry.emplace<SDL_RenderSprite>(brick);
+	registry.emplace<Brick>(brick);
 	registry.get<Brick>(brick).score_value = score;
-	registry.assign<SpriteLocation>(brick, location);
+	registry.emplace<SpriteLocation>(brick, location);
 	load_sprite(sprite, registry.get<SDL_RenderSprite>(brick));
 	return brick;
 }
@@ -283,25 +266,20 @@ int main(int argc, char *argv[])
 	
 	initialize_sdl();
 
-	main_registry.set<RegistryObservers>();
-
-	main_registry.ctx<RegistryObservers>().initialize(main_registry);
-	
-
 	//initialize player
 	auto player_entity = main_registry.create();
-	main_registry.assign<SDL_RenderSprite>(player_entity);
-	main_registry.assign<PlayerInputComponent>(player_entity);
-	main_registry.assign<SpriteLocation>(player_entity,0.0f,0.0f);
-	main_registry.assign<MovementComponent>(player_entity);
+	main_registry.emplace<SDL_RenderSprite>(player_entity);
+	main_registry.emplace<PlayerInputComponent>(player_entity);
+	main_registry.emplace<SpriteLocation>(player_entity, 0.0f, 0.0f);
+	main_registry.emplace<MovementComponent>(player_entity);
 	load_sprite("../assets/sprites/paddleBlu.png", main_registry.get<SDL_RenderSprite>(player_entity));
 
 	//ball
 	auto ball_entity = main_registry.create();
-	main_registry.assign<SDL_RenderSprite>(ball_entity);
-	main_registry.assign<Ball>(ball_entity);
-	main_registry.assign<SpriteLocation>(ball_entity, 0.0f, 100.0f);
-	main_registry.assign<MovementComponent>(ball_entity);
+	main_registry.emplace<SDL_RenderSprite>(ball_entity);
+	main_registry.emplace<Ball>(ball_entity);
+	main_registry.emplace<SpriteLocation>(ball_entity, 0.0f, 100.0f);
+	main_registry.emplace<MovementComponent>(ball_entity);
 	load_sprite("../assets/sprites/ballGrey.png", main_registry.get<SDL_RenderSprite>(ball_entity));
 	main_registry.get<MovementComponent>(ball_entity).velocity = random_vector() * 400;
 
